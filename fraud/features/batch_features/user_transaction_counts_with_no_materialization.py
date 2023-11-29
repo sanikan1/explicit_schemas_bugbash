@@ -2,26 +2,27 @@ from tecton import batch_feature_view, FilteredSource, Aggregation
 from fraud.entities import user
 from fraud.data_sources.transactions import transactions_batch
 from datetime import datetime, timedelta
-
+from tecton.types import Field, String, Int32, Timestamp, Int64
 
 @batch_feature_view(
     sources=[FilteredSource(transactions_batch)],
     entities=[user],
     mode='spark_sql',
-    aggregation_interval=timedelta(days=1),
-    aggregations=[
-        Aggregation(column='transaction', function='count', time_window=timedelta(days=1)),
-        Aggregation(column='transaction', function='count', time_window=timedelta(days=30)),
-        Aggregation(column='transaction', function='count', time_window=timedelta(days=90))
-    ],
-    online=True,
-    offline=True,
+    online=False,
+    offline=False,
     feature_start_time=datetime(2022, 5, 1),
     tags={'release': 'production'},
     owner='matt@tecton.ai',
+    schema = [
+       Field("user_id", String),
+       Field("transaction", String),
+       Field("timestamp", Timestamp),
+    ],
+    run_query_validation = False,
+    batch_schedule = timedelta(days=1),
     description='User transaction totals over a series of time windows, updated daily.'
 )
-def user_transaction_counts(transactions):
+def user_transaction_counts_with_no_materialization(transactions):
     return f'''
         SELECT
             user_id,
